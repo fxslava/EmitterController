@@ -1,0 +1,23 @@
+--cpu Cortex-M0
+"emittermcu\startup_stm32f042x6.o"
+"emittermcu\stm32f0xx_hal.o"
+"emittermcu\stm32f0xx_hal_pwr.o"
+"emittermcu\stm32f0xx_hal_rcc.o"
+"emittermcu\stm32f0xx_hal_cortex.o"
+"emittermcu\stm32f0xx_hal_gpio.o"
+"emittermcu\stm32f0xx_hal_pwr_ex.o"
+"emittermcu\stm32f0xx_hal_i2c.o"
+"emittermcu\stm32f0xx_hal_flash.o"
+"emittermcu\stm32f0xx_hal_can.o"
+"emittermcu\stm32f0xx_hal_rcc_ex.o"
+"emittermcu\stm32f0xx_hal_dma.o"
+"emittermcu\stm32f0xx_hal_i2c_ex.o"
+"emittermcu\stm32f0xx_hal_flash_ex.o"
+"emittermcu\main.o"
+"emittermcu\stm32f0xx_hal_msp.o"
+"emittermcu\stm32f0xx_it.o"
+"emittermcu\system_stm32f0xx.o"
+--library_type=microlib --strict --scatter "EmitterMCU\EmitterMCU.sct"
+--diag_suppress=L6329 --summary_stderr --info summarysizes --map --xref --callgraph --symbols
+--info sizes --info totals --info unused --info veneers
+--list "EmitterMCU.map" -o EmitterMCU\EmitterMCU.axf
