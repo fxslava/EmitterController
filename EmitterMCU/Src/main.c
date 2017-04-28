@@ -45,8 +45,6 @@ I2C_HandleTypeDef hi2c1;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
-static CanTxMsgTypeDef        TxMessage;
-static CanRxMsgTypeDef        RxMessage;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -97,6 +95,8 @@ int main(void)
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_SET);
 	HAL_Delay(100);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_RESET);
+	
+	HAL_CAN_Transmit_IT(&hcan);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -104,7 +104,6 @@ int main(void)
   while (1)
   {
   /* USER CODE END WHILE */
-
   /* USER CODE BEGIN 3 */
 
   }
@@ -170,8 +169,9 @@ void SystemClock_Config(void)
 /* CAN init function */
 static void MX_CAN_Init(void)
 {
+
   hcan.Instance = CAN;
-  hcan.Init.Prescaler = 16;
+  hcan.Init.Prescaler = 160;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SJW = CAN_SJW_1TQ;
   hcan.Init.BS1 = CAN_BS1_1TQ;
@@ -182,42 +182,10 @@ static void MX_CAN_Init(void)
   hcan.Init.NART = DISABLE;
   hcan.Init.RFLM = DISABLE;
   hcan.Init.TXFP = DISABLE;
-	
   if (HAL_CAN_Init(&hcan) != HAL_OK)
   {
     Error_Handler();
   }
-	
-	CAN_FilterConfTypeDef canFilterConfig;
-  canFilterConfig.FilterNumber = 0;
-  canFilterConfig.FilterMode = CAN_FILTERMODE_IDMASK;
-  canFilterConfig.FilterScale = CAN_FILTERSCALE_32BIT;
-  canFilterConfig.FilterIdHigh = 0x0000;
-  canFilterConfig.FilterIdLow = 0x0000;
-  canFilterConfig.FilterMaskIdHigh = 0x0000 << 5;
-  canFilterConfig.FilterMaskIdLow = 0x0000;
-  canFilterConfig.FilterFIFOAssignment = 0;
-  canFilterConfig.FilterActivation = ENABLE;
-  canFilterConfig.BankNumber = 0;
-  
-  if (HAL_CAN_ConfigFilter(&hcan, &canFilterConfig) != HAL_OK)
-	{
-		Error_Handler();
-	}
-	
-	hcan.pTxMsg = &TxMessage;
-	hcan.pRxMsg = &RxMessage;
-	
-	hcan.pTxMsg->StdId = LASER_CONTROLLER_ID;
-	hcan.pTxMsg->ExtId = LASER_CONTROLLER_UID;
-	hcan.pTxMsg->RTR = CAN_RTR_DATA;
-	hcan.pTxMsg->IDE = CAN_ID_STD;
-	hcan.pTxMsg->DLC = 2;
-	hcan.pTxMsg->Data[0] = 0xAA;
-	hcan.pTxMsg->Data[1] = 0xCC;
-	
-	//HAL_CAN_Transmit_IT(&hcan);
-	HAL_CAN_Receive_IT(&hcan, CAN_FIFO0);
 }
 
 /* I2C1 init function */
@@ -271,6 +239,20 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *CanHandle)
+{
+  if ((CanHandle->pRxMsg->StdId == 0x123) && (CanHandle->pRxMsg->IDE == CAN_ID_STD) && (CanHandle->pRxMsg->DLC == 2))
+  {
+		rx_led();
+  }
+
+  /* Receive */
+  if (HAL_CAN_Receive_IT(CanHandle, CAN_FIFO0) != HAL_OK)
+  {
+    /* Reception Error */
+    Error_Handler();
+  }
+}
 
 /* USER CODE END 4 */
 

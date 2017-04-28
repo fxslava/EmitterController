@@ -13,6 +13,8 @@
 "emittermcu\stm32f0xx_hal_dma.o"
 "emittermcu\stm32f0xx_hal_i2c_ex.o"
 "emittermcu\stm32f0xx_hal_flash_ex.o"
+"emittermcu\stm32f0xx_hal_tim.o"
+"emittermcu\stm32f0xx_hal_tim_ex.o"
 "emittermcu\main.o"
 "emittermcu\stm32f0xx_hal_msp.o"
 "emittermcu\stm32f0xx_it.o"

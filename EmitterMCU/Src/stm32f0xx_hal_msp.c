@@ -36,7 +36,8 @@
 
 extern void Error_Handler(void);
 /* USER CODE BEGIN 0 */
-
+static CanTxMsgTypeDef        TxMessage;
+static CanRxMsgTypeDef        RxMessage;
 /* USER CODE END 0 */
 /**
   * Initializes the Global MSP.
@@ -61,7 +62,7 @@ void HAL_MspInit(void)
 	__HAL_RCC_GPIOB_CLK_ENABLE();
 	GPIO_InitTypeDef GPIO_InitStruct;
 
-	GPIO_InitStruct.Pin = GPIO_PIN_5|GPIO_PIN_6;
+	GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
@@ -96,7 +97,32 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
     HAL_NVIC_SetPriority(CEC_CAN_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(CEC_CAN_IRQn);
   /* USER CODE BEGIN CAN_MspInit 1 */
-
+		hcan->pTxMsg = &TxMessage;
+		hcan->pRxMsg = &RxMessage;
+		
+		TxMessage.StdId = 0x123;
+		TxMessage.ExtId = 0x01;
+		TxMessage.IDE = CAN_ID_STD;
+		TxMessage.RTR = CAN_RTR_DATA;
+		TxMessage.DLC = 2;
+		TxMessage.Data[0] = 0x01;
+		TxMessage.Data[1] = 0x00;
+		
+		CAN_FilterConfTypeDef canFilter;
+		canFilter.FilterNumber = 0;
+		canFilter.FilterMode = CAN_FILTERMODE_IDMASK;
+		canFilter.FilterScale = CAN_FILTERSCALE_16BIT;
+		canFilter.FilterIdHigh = 0x0000;
+		canFilter.FilterIdLow = 0x0000;
+		canFilter.FilterMaskIdHigh = 0x0000;
+		canFilter.FilterMaskIdLow = 0x0000;
+		canFilter.FilterFIFOAssignment = CAN_FIFO0;
+		canFilter.FilterActivation = ENABLE;
+		canFilter.BankNumber = 0;
+		
+		HAL_CAN_ConfigFilter(hcan, &canFilter);
+		
+		HAL_CAN_Receive_IT(hcan, CAN_FIFO0);
   /* USER CODE END CAN_MspInit 1 */
   }
 

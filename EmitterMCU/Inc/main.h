@@ -44,7 +44,7 @@
 /* USER CODE BEGIN Private defines */
 
 #define LASER_CONTROLLER_ID		0x001
-#define LASER_CONTROLLER_UID	0x7E141A606
+#define LASER_CONTROLLER_UID	0x7E141A01
 
 /* USER CODE END Private defines */
 
