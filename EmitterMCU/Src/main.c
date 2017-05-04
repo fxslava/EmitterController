@@ -60,20 +60,34 @@ static void MX_I2C1_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
-void rx_led()
+void rx_led_on()
 {
-	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_5);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 }
 
-void tx_led()
+void rx_led_off()
 {
-	HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_6);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+}
+
+void tx_led_on()
+{
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+}
+
+void tx_led_off()
+{
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
 }
 /* USER CODE END 0 */
 
+volatile uint32_t check;
+volatile float temperature;
+
 int main(void)
 {
-
+	uint32_t cnt = 0x12345678;
+	uint8_t data[4];
   /* USER CODE BEGIN 1 */
   /* USER CODE END 1 */
 
@@ -96,7 +110,23 @@ int main(void)
 	HAL_Delay(100);
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_RESET);
 	
-	HAL_CAN_Transmit_IT(&hcan);
+	HAL_CAN_Receive_IT(&hcan, CAN_FIFO0);
+	HAL_I2C_Mem_Write(&hi2c1, LASER_EEPROM_I2C_ADDRESS << 1, LASER_CNT_MEM_ADDRESS, sizeof(uint16_t), (uint8_t*)&cnt, sizeof(uint32_t), 10);
+	HAL_Delay(10);
+	HAL_I2C_Mem_Read(&hi2c1, LASER_EEPROM_I2C_ADDRESS << 1, LASER_CNT_MEM_ADDRESS, sizeof(uint16_t), (uint8_t*)&check, sizeof(uint32_t), 10);
+	
+	// Write to configuration register (continous convertion)
+	data[0] = 0x0E;
+	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xAC, 1, data, sizeof(uint8_t), 10);
+	// Write +40 degrees to TH
+	data[0] = 0x28; data[1] = 0x00;
+	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xA1, 1, data, sizeof(uint16_t), 10);
+	// Write +10 degrees to TL
+	data[0] = 0x0A; data[1] = 0x00;
+	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xA2, 1, data, sizeof(uint16_t), 10);
+	// Start convertion
+	data[0] = 0x51;
+	HAL_I2C_Master_Transmit(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS, data, 1, 10);
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -105,7 +135,16 @@ int main(void)
   {
   /* USER CODE END WHILE */
   /* USER CODE BEGIN 3 */
-
+		/*HAL_CAN_Transmit(&hcan, 5);
+		HAL_Delay(100);*/
+		// Read temperature
+		/*data[0] = 0x92;	data[1] = 0xAA;
+		HAL_I2C_Master_Transmit(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS << 1, data, 2, 5);
+		data[0] = 0x93;	data[1] = 0x00; data[2] = 0x00;
+		HAL_I2C_Master_Receive(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS << 1, data, 2, 5);*/
+		HAL_I2C_Mem_Read(&hi2c1, 0x92, 0xAA, 1, data, 2, 10);
+		temperature = (float)data[0] + (float)(data[1] >> 4) / 16.0f;
+		HAL_Delay(100);
   }
   /* USER CODE END 3 */
 
@@ -171,15 +210,15 @@ static void MX_CAN_Init(void)
 {
 
   hcan.Instance = CAN;
-  hcan.Init.Prescaler = 160;
+  hcan.Init.Prescaler = 120;
   hcan.Init.Mode = CAN_MODE_NORMAL;
   hcan.Init.SJW = CAN_SJW_1TQ;
-  hcan.Init.BS1 = CAN_BS1_1TQ;
-  hcan.Init.BS2 = CAN_BS2_1TQ;
+  hcan.Init.BS1 = CAN_BS1_13TQ;
+  hcan.Init.BS2 = CAN_BS2_2TQ;
   hcan.Init.TTCM = DISABLE;
   hcan.Init.ABOM = DISABLE;
   hcan.Init.AWUM = DISABLE;
-  hcan.Init.NART = DISABLE;
+  hcan.Init.NART = ENABLE;
   hcan.Init.RFLM = DISABLE;
   hcan.Init.TXFP = DISABLE;
   if (HAL_CAN_Init(&hcan) != HAL_OK)
@@ -241,9 +280,29 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *CanHandle)
 {
-  if ((CanHandle->pRxMsg->StdId == 0x123) && (CanHandle->pRxMsg->IDE == CAN_ID_STD) && (CanHandle->pRxMsg->DLC == 2))
+  if (CanHandle->pRxMsg->IDE == CAN_ID_EXT) // (CanHandle->pRxMsg->DLC == 2)
   {
-		rx_led();
+		// EMMITER
+		if ((CanHandle->pRxMsg->ExtId & CAN_RECEIVER_DEVICE_ID_GROUP_mask) == 0)
+		{
+			if (CanHandle->pRxMsg->ExtId & )
+			{
+			}
+		}
+		
+		// PORT
+		if ((CanHandle->pRxMsg->ExtId & CAN_RECEIVER_DEVICE_ID_PORT_mask) != 0)
+		{
+			if ((CanHandle->pRxMsg->Data[1] & 0x01) != 0)
+				rx_led_on();
+			else
+				rx_led_off();
+			
+			if ((CanHandle->pRxMsg->Data[1] & 0x02) != 0)
+				tx_led_on();
+			else
+				tx_led_off();
+		}
   }
 
   /* Receive */

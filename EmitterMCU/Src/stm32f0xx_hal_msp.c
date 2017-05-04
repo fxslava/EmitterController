@@ -100,9 +100,9 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
 		hcan->pTxMsg = &TxMessage;
 		hcan->pRxMsg = &RxMessage;
 		
-		TxMessage.StdId = 0x123;
-		TxMessage.ExtId = 0x01;
-		TxMessage.IDE = CAN_ID_STD;
+		TxMessage.StdId = 0x00;
+		TxMessage.ExtId = 0x12345678U;
+		TxMessage.IDE = CAN_ID_EXT;
 		TxMessage.RTR = CAN_RTR_DATA;
 		TxMessage.DLC = 2;
 		TxMessage.Data[0] = 0x01;
@@ -111,18 +111,18 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
 		CAN_FilterConfTypeDef canFilter;
 		canFilter.FilterNumber = 0;
 		canFilter.FilterMode = CAN_FILTERMODE_IDMASK;
-		canFilter.FilterScale = CAN_FILTERSCALE_16BIT;
-		canFilter.FilterIdHigh = 0x0000;
-		canFilter.FilterIdLow = 0x0000;
-		canFilter.FilterMaskIdHigh = 0x0000;
-		canFilter.FilterMaskIdLow = 0x0000;
+		canFilter.FilterScale = CAN_FILTERSCALE_32BIT;
+		canFilter.FilterIdHigh = SLOT_ID_FILTER >> 13;
+		canFilter.FilterIdLow = (SLOT_ID_FILTER << 3) | CAN_ID_EXT;
+		canFilter.FilterMaskIdHigh = SLOT_ID_MASK >> 13;
+		canFilter.FilterMaskIdLow = (SLOT_ID_MASK << 3) | CAN_ID_EXT;
 		canFilter.FilterFIFOAssignment = CAN_FIFO0;
 		canFilter.FilterActivation = ENABLE;
 		canFilter.BankNumber = 0;
 		
 		HAL_CAN_ConfigFilter(hcan, &canFilter);
 		
-		HAL_CAN_Receive_IT(hcan, CAN_FIFO0);
+		//HAL_CAN_Receive_IT(hcan, CAN_FIFO0);
   /* USER CODE END CAN_MspInit 1 */
   }
 

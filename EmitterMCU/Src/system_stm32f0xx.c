@@ -218,7 +218,7 @@ void SystemInit(void)
   /* Reset HSI14 bit */
   RCC->CR2 &= (uint32_t)0xFFFFFFFEU;
 
-  /* Disable all interrupts */
+  /* Disable all interrup	ts */
   RCC->CIR = 0x00000000U;
 
 }

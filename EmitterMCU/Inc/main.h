@@ -43,8 +43,40 @@
 
 /* USER CODE BEGIN Private defines */
 
-#define LASER_CONTROLLER_ID		0x001
-#define LASER_CONTROLLER_UID	0x7E141A01
+// EEPROM, Temperature sensor IC
+#define LASER_EEPROM_I2C_ADDRESS		0x50
+#define LASER_TEMPSEN_I2C_ADDRESS		0x92
+#define LASER_CNT_MEM_ADDRESS				0x0000
+
+// CAN
+#define CAN_DEVICE_ID								0x01			// Diode laser V1.0
+#define SLOT_ID_FILTER							0 << 7		// Slot ID 0..1 << 7
+#define SLOT_ID_MASK								1 << 7
+
+// Device id groups
+#define CAN_RECEIVER_DEVICE_ID_SLOT_mask			0x8000
+#define CAN_RECEIVER_DEVICE_ID_PWM_mask				0x4000
+#define CAN_RECEIVER_DEVICE_ID_PORT_mask			0x2000
+#define CAN_RECEIVER_DEVICE_ID_SENS_mask			0x1000
+#define CAN_RECEIVER_DEVICE_ID_GROUP_mask			0x7000
+
+// CMD options
+#define CAN_MESSAGE_TYPE_RW_mask							0x80 	// "0" - read, "1" - write
+#define CAN_MESSAGE_TYPE_CMD_mask							0x40 	// "0" - register, "1" - command
+
+// CMD types
+#define CAN_MESSAGE_TYPE_CMD_RESETCNT					0x01
+#define CAN_MESSAGE_TYPE_CMD_TAU							0x02
+#define CAN_MESSAGE_TYPE_CMD_ENERGY						0x03
+#define CAN_MESSAGE_TYPE_CMD_REQUESTID				0x04
+
+// Registers
+#define CAN_MESSAGE_TYPE_REGISTER_ID					0x01
+#define CAN_MESSAGE_TYPE_REGISTER_CNT					0x02
+#define CAN_MESSAGE_TYPE_REGISTER_TEMPERATURE	0x03
+#define CAN_MESSAGE_TYPE_REGISTER_FLOW				0x04
+#define CAN_MESSAGE_TYPE_REGISTER_LED					0x05
+#define CAN_MESSAGE_TYPE_REGISTER_SWITCH			0x06
 
 /* USER CODE END Private defines */
 
@@ -58,3 +90,4 @@
 
 #endif /* __MAIN_H */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+
