@@ -36,8 +36,8 @@
 
 extern void Error_Handler(void);
 /* USER CODE BEGIN 0 */
-static CanTxMsgTypeDef        TxMessage;
-static CanRxMsgTypeDef        RxMessage;
+CanTxMsgTypeDef        TxMessage;
+CanRxMsgTypeDef        RxMessage;
 /* USER CODE END 0 */
 /**
   * Initializes the Global MSP.

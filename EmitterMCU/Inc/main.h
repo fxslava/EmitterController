@@ -50,8 +50,8 @@
 
 // CAN
 #define CAN_DEVICE_ID								0x01			// Diode laser V1.0
-#define SLOT_ID_FILTER							0 << 7		// Slot ID 0..1 << 7
-#define SLOT_ID_MASK								1 << 7
+#define SLOT_ID_FILTER							0 << 15		// Slot ID 0..1 << 7
+#define SLOT_ID_MASK								1 << 15
 
 // Device id groups
 #define CAN_RECEIVER_DEVICE_ID_SLOT_mask			0x8000
@@ -59,6 +59,12 @@
 #define CAN_RECEIVER_DEVICE_ID_PORT_mask			0x2000
 #define CAN_RECEIVER_DEVICE_ID_SENS_mask			0x1000
 #define CAN_RECEIVER_DEVICE_ID_GROUP_mask			0x7000
+
+#define CAN_SENDER_DEVICE_ID_SLOT_mask				0x800000
+#define CAN_SENDER_DEVICE_ID_PWM_mask					0x400000
+#define CAN_SENDER_DEVICE_ID_PORT_mask				0x200000
+#define CAN_SENDER_DEVICE_ID_SENS_mask				0x100000
+#define CAN_SENDER_DEVICE_ID_GROUP_mask				0x700000
 
 // CMD options
 #define CAN_MESSAGE_TYPE_RW_mask							0x80 	// "0" - read, "1" - write
@@ -77,6 +83,9 @@
 #define CAN_MESSAGE_TYPE_REGISTER_FLOW				0x04
 #define CAN_MESSAGE_TYPE_REGISTER_LED					0x05
 #define CAN_MESSAGE_TYPE_REGISTER_SWITCH			0x06
+
+#define CAN_MESSAGE_TYPE_REGISTERID_mask			0x3f
+#define CAN_MESSAGE_TYPE_COMMANDID_mask				0x3f
 
 /* USER CODE END Private defines */
 

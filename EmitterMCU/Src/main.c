@@ -35,13 +35,22 @@
 #include "stm32f0xx_hal.h"
 
 /* USER CODE BEGIN Includes */
-
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan;
-
 I2C_HandleTypeDef hi2c1;
+
+// CAN messages
+extern CanTxMsgTypeDef        TxMessage;
+extern CanRxMsgTypeDef        RxMessage;
+
+// Main Laser Pulse Counter
+volatile static uint32_t LaserPulseCounter = 0;
+
+// Temperature
+volatile float temperature;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -79,15 +88,46 @@ void tx_led_off()
 {
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
 }
-/* USER CODE END 0 */
 
-volatile uint32_t check;
-volatile float temperature;
+void LoadCounterFromEEPROM()
+{
+	HAL_I2C_Mem_Read(&hi2c1, LASER_EEPROM_I2C_ADDRESS << 1, LASER_CNT_MEM_ADDRESS, sizeof(uint16_t), (uint8_t*)&LaserPulseCounter, sizeof(uint32_t), 10);
+}
+
+void StoreCounterToEEPROM()
+{
+	HAL_I2C_Mem_Write(&hi2c1, LASER_EEPROM_I2C_ADDRESS << 1, LASER_CNT_MEM_ADDRESS, sizeof(uint16_t), (uint8_t*)&LaserPulseCounter, sizeof(uint32_t), 10);
+	HAL_Delay(10);
+}
+
+void InitTemperatureSensor()
+{
+	uint8_t data[4];
+	// Write to configuration register (continous convertion)
+	data[0] = 0x0E;
+	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xAC, 1, data, sizeof(uint8_t), 10);
+	// Write +40 degrees to TH
+	data[0] = 0x28; data[1] = 0x00;
+	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xA1, 1, data, sizeof(uint16_t), 10);
+	// Write +10 degrees to TL
+	data[0] = 0x0A; data[1] = 0x00;
+	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xA2, 1, data, sizeof(uint16_t), 10);
+	// Start convertion
+	data[0] = 0x51;
+	HAL_I2C_Master_Transmit(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS, data, 1, 10);
+}
+
+void ReadTemperatureData()
+{
+	uint8_t data[4];
+	HAL_I2C_Mem_Read(&hi2c1, 0x92, 0xAA, 1, data, 2, 10);
+	temperature = (float)data[0] + (float)(data[1] >> 4) / 16.0f;
+	HAL_Delay(700);
+}
+/* USER CODE END 0 */
 
 int main(void)
 {
-	uint32_t cnt = 0x12345678;
-	uint8_t data[4];
   /* USER CODE BEGIN 1 */
   /* USER CODE END 1 */
 
@@ -105,28 +145,21 @@ int main(void)
   MX_I2C1_Init();
 
   /* USER CODE BEGIN 2 */
-	// Normal start
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_SET);
+	// Load Laser Pulse Counter
+	LoadCounterFromEEPROM();
+	
+	// Normal start "Blink"
+	rx_led_on();
+	tx_led_on();
 	HAL_Delay(100);
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_RESET);
+	rx_led_off();
+	tx_led_off();
 	
+	// Start CAN receiving messages
 	HAL_CAN_Receive_IT(&hcan, CAN_FIFO0);
-	HAL_I2C_Mem_Write(&hi2c1, LASER_EEPROM_I2C_ADDRESS << 1, LASER_CNT_MEM_ADDRESS, sizeof(uint16_t), (uint8_t*)&cnt, sizeof(uint32_t), 10);
-	HAL_Delay(10);
-	HAL_I2C_Mem_Read(&hi2c1, LASER_EEPROM_I2C_ADDRESS << 1, LASER_CNT_MEM_ADDRESS, sizeof(uint16_t), (uint8_t*)&check, sizeof(uint32_t), 10);
 	
-	// Write to configuration register (continous convertion)
-	data[0] = 0x0E;
-	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xAC, 1, data, sizeof(uint8_t), 10);
-	// Write +40 degrees to TH
-	data[0] = 0x28; data[1] = 0x00;
-	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xA1, 1, data, sizeof(uint16_t), 10);
-	// Write +10 degrees to TL
-	data[0] = 0x0A; data[1] = 0x00;
-	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xA2, 1, data, sizeof(uint16_t), 10);
-	// Start convertion
-	data[0] = 0x51;
-	HAL_I2C_Master_Transmit(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS, data, 1, 10);
+	// Test temperature sensor
+	InitTemperatureSensor();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -135,16 +168,7 @@ int main(void)
   {
   /* USER CODE END WHILE */
   /* USER CODE BEGIN 3 */
-		/*HAL_CAN_Transmit(&hcan, 5);
-		HAL_Delay(100);*/
-		// Read temperature
-		/*data[0] = 0x92;	data[1] = 0xAA;
-		HAL_I2C_Master_Transmit(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS << 1, data, 2, 5);
-		data[0] = 0x93;	data[1] = 0x00; data[2] = 0x00;
-		HAL_I2C_Master_Receive(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS << 1, data, 2, 5);*/
-		HAL_I2C_Mem_Read(&hi2c1, 0x92, 0xAA, 1, data, 2, 10);
-		temperature = (float)data[0] + (float)(data[1] >> 4) / 16.0f;
-		HAL_Delay(100);
+		ReadTemperatureData();
   }
   /* USER CODE END 3 */
 
@@ -280,13 +304,89 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *CanHandle)
 {
-  if (CanHandle->pRxMsg->IDE == CAN_ID_EXT) // (CanHandle->pRxMsg->DLC == 2)
+  if (CanHandle->pRxMsg->IDE == CAN_ID_EXT)
   {
 		// EMMITER
 		if ((CanHandle->pRxMsg->ExtId & CAN_RECEIVER_DEVICE_ID_GROUP_mask) == 0)
 		{
-			if (CanHandle->pRxMsg->ExtId & )
+			if ((CanHandle->pRxMsg->ExtId & CAN_MESSAGE_TYPE_CMD_mask) == 0)
 			{
+				// Read from register
+				if ((CanHandle->pRxMsg->ExtId & CAN_MESSAGE_TYPE_RW_mask) == 0)
+				{
+					switch ((uint8_t)(CanHandle->pRxMsg->ExtId & CAN_MESSAGE_TYPE_REGISTERID_mask))
+					{
+						case CAN_MESSAGE_TYPE_REGISTER_ID:
+							TxMessage.Data[0] = CAN_DEVICE_ID;
+							TxMessage.DLC = 1;
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_CNT:
+							memcpy((void*)TxMessage.Data, (void*)&LaserPulseCounter, 4);
+							TxMessage.DLC = 4;
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_TEMPERATURE:
+							memcpy((void*)TxMessage.Data, (void*)&temperature, 4);
+							TxMessage.DLC = 4;
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_FLOW:
+							// Not support
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_LED:
+							// Not support
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_SWITCH:
+							// Not support
+							break;
+					}
+					HAL_CAN_Transmit_IT(&hcan);
+				}
+				// Write to register
+				else
+				{
+					switch ((uint8_t)(CanHandle->pRxMsg->ExtId & CAN_MESSAGE_TYPE_REGISTERID_mask))
+					{
+						case CAN_MESSAGE_TYPE_REGISTER_ID:
+							// Read only
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_CNT:
+							memcpy((void*)&LaserPulseCounter, (void*)TxMessage.Data, 4);
+							StoreCounterToEEPROM();
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_TEMPERATURE:
+							// Read only
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_FLOW:
+							// Not support
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_LED:
+							// Not support
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_SWITCH:
+							// Not support
+							break;
+					}
+					HAL_CAN_Transmit_IT(&hcan);
+				}
+			}
+			else
+			{
+				// Perform commands
+				switch ((uint8_t)(CanHandle->pRxMsg->ExtId & CAN_MESSAGE_TYPE_COMMANDID_mask))
+				{
+					case CAN_MESSAGE_TYPE_CMD_RESETCNT:
+						LaserPulseCounter = 0;
+						StoreCounterToEEPROM();
+						break;
+					case CAN_MESSAGE_TYPE_CMD_TAU:
+						// Not support
+						break;
+					case CAN_MESSAGE_TYPE_CMD_ENERGY:
+						// Not support
+						break;
+					case CAN_MESSAGE_TYPE_CMD_REQUESTID:
+						// Not support
+						break;
+				}
 			}
 		}
 		
