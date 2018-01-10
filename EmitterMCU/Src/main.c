@@ -36,8 +36,11 @@
 
 /* USER CODE BEGIN Includes */
 #include <string.h>
+#include <stdbool.h>
+#include <math.h>
 /* USER CODE END Includes */
 
+/* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan;
 I2C_HandleTypeDef hi2c1;
@@ -45,15 +48,73 @@ I2C_HandleTypeDef hi2c1;
 // CAN messages
 extern CanTxMsgTypeDef        TxMessage;
 extern CanRxMsgTypeDef        RxMessage;
+uint8_t												can_device_id = 0x01;
+uint32_t											can_slot_filter = 0 << 15;
+uint32_t											can_slot_mask = 1 << 15;
+
+typedef struct UUID_struct
+{
+	uint16_t X;
+	uint16_t Y;
+	uint8_t WAF_NUM;
+	char LOT_NUM[7];
+} UUID;
+
+#define STM32_UUID ((uint32_t *)0x1FFFF7AC)
 
 // Main Laser Pulse Counter
 volatile static uint32_t LaserPulseCounter = 0;
+volatile static uint32_t newLaserPulseCounter = 0;
 
 // Temperature
 volatile float temperature;
 
-/* USER CODE BEGIN PV */
-/* Private variables ---------------------------------------------------------*/
+//Duration table
+volatile float duration_tbl[ENERGY_TABLE_DURATION_NUM] = {
+	0.002f,	0.004f, 0.006f, 0.008f, 0.010f, 0.012f, 0.014f, 0.016f, 0.018f, 0.020f,
+	2.000f,	4.000f, 6.000f, 8.000f, 10.00f, 12.00f, 14.00f, 16.00f, 18.00f, 20.00f,
+	22.00f,	24.00f, 26.00f, 28.00f, 30.00f, 32.00f, 34.00f, 36.00f, 38.00f, 40.00f	}; // reserved
+
+//Energy table
+volatile float energy_tbl[ENERGY_TABLE_DURATION_NUM * ENERGY_TABLE_VOLTAGES_NUM] = {
+	
+/*							220V,	240V,	260V,	280V, 300V, 320V, 340V, 360V, 380V, 400V, 420V, 440V, 450V - Voltages	*/
+/*	200us		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	400us		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	600us		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	800us		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	1000us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	1200us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	1400us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	1600us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	1800us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	2000us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,	
+	
+/*							220V,	240V,	260V,	280V, 300V, 320V, 340V, 360V, 380V, 400V, 420V, 440V, 450V - Voltages	*/	
+/*	2ms			*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	4ms			*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	6ms			*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	8ms			*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	10ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	12ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	14ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	16ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	18ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	20ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+
+/*							220V,	240V,	260V,	280V, 300V, 320V, 340V, 360V, 380V, 400V, 420V, 440V, 450V - Voltages	*/
+/*	12ms		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	14ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	16ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	18ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	20ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	22ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	24ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	26ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	28ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
+/*	30ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f
+};
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -69,6 +130,16 @@ static void MX_I2C1_Init(void);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+float Lerp(float X1, float X2, float Y1, float Y2, float x)
+{
+	float Y = Y1;
+	if ((X2 - X1) > 0.0001f)
+	{
+		Y = ((Y2 - Y1) / (X2 - X1)) * (x - X1) + Y1;
+	}
+	return Y;
+}
+
 void rx_led_on()
 {
 	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
@@ -92,6 +163,7 @@ void tx_led_off()
 void LoadCounterFromEEPROM()
 {
 	HAL_I2C_Mem_Read(&hi2c1, LASER_EEPROM_I2C_ADDRESS << 1, LASER_CNT_MEM_ADDRESS, sizeof(uint16_t), (uint8_t*)&LaserPulseCounter, sizeof(uint32_t), 10);
+	newLaserPulseCounter = LaserPulseCounter;
 }
 
 void StoreCounterToEEPROM()
@@ -100,18 +172,53 @@ void StoreCounterToEEPROM()
 	HAL_Delay(10);
 }
 
+bool TestCounter(uint32_t counter)
+{
+	uint32_t counter_cmp;
+	HAL_I2C_Mem_Write(&hi2c1, LASER_EEPROM_I2C_ADDRESS << 1, LASER_CNT_MEM_ADDRESS, sizeof(uint16_t), (uint8_t*)&counter, sizeof(uint32_t), 10);
+	HAL_Delay(10);
+	HAL_I2C_Mem_Read(&hi2c1, LASER_EEPROM_I2C_ADDRESS << 1, LASER_CNT_MEM_ADDRESS, sizeof(uint16_t), (uint8_t*)&counter_cmp, sizeof(uint32_t), 10);
+	return counter == counter_cmp;
+}
+
+void TestEEPROM()
+{
+	uint32_t counter = 0;
+	for( counter = 0; counter < 100000; counter++)
+	{
+		if (!TestCounter(counter))
+		{
+			rx_led_on();
+			tx_led_on();
+			__breakpoint(0);
+			HAL_Delay(1000);
+			rx_led_off();
+			tx_led_off();
+		}
+		else
+		{
+			rx_led_on();
+			tx_led_on();
+			HAL_Delay(1);
+			rx_led_off();
+			tx_led_off();
+			HAL_Delay(10);
+		}
+	}
+}
+
 void InitTemperatureSensor()
 {
 	uint8_t data[4];
 	// Write to configuration register (continous convertion)
 	data[0] = 0x0E;
-	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xAC, 1, data, sizeof(uint8_t), 10);
+	HAL_I2C_Mem_Write(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS, 0xAC, 1, data, sizeof(uint8_t), 10);
 	// Write +40 degrees to TH
 	data[0] = 0x28; data[1] = 0x00;
-	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xA1, 1, data, sizeof(uint16_t), 10);
+	HAL_I2C_Mem_Write(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS, 0xA1, 1, data, sizeof(uint16_t), 10);
 	// Write +10 degrees to TL
 	data[0] = 0x0A; data[1] = 0x00;
-	HAL_I2C_Mem_Write(&hi2c1, 0x92, 0xA2, 1, data, sizeof(uint16_t), 10);
+	HAL_I2C_Mem_Write(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS, 0xA2, 1, data, sizeof(uint16_t), 10);
 	// Start convertion
 	data[0] = 0x51;
 	HAL_I2C_Master_Transmit(&hi2c1, LASER_TEMPSEN_I2C_ADDRESS, data, 1, 10);
@@ -122,7 +229,7 @@ void ReadTemperatureData()
 	uint8_t data[4];
 	HAL_I2C_Mem_Read(&hi2c1, 0x92, 0xAA, 1, data, 2, 10);
 	temperature = (float)data[0] + (float)(data[1] >> 4) / 16.0f;
-	HAL_Delay(700);
+	HAL_Delay(50);
 }
 /* USER CODE END 0 */
 
@@ -146,6 +253,7 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 	// Load Laser Pulse Counter
+	//TestEEPROM();
 	LoadCounterFromEEPROM();
 	
 	// Normal start "Blink"
@@ -169,6 +277,12 @@ int main(void)
   /* USER CODE END WHILE */
   /* USER CODE BEGIN 3 */
 		ReadTemperatureData();
+		
+		if (LaserPulseCounter != newLaserPulseCounter)
+		{
+			LaserPulseCounter = newLaserPulseCounter;
+			StoreCounterToEEPROM();
+		}
   }
   /* USER CODE END 3 */
 
@@ -242,7 +356,7 @@ static void MX_CAN_Init(void)
   hcan.Init.TTCM = DISABLE;
   hcan.Init.ABOM = DISABLE;
   hcan.Init.AWUM = DISABLE;
-  hcan.Init.NART = ENABLE;
+  hcan.Init.NART = DISABLE;
   hcan.Init.RFLM = DISABLE;
   hcan.Init.TXFP = DISABLE;
   if (HAL_CAN_Init(&hcan) != HAL_OK)
@@ -304,6 +418,7 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *CanHandle)
 {
+	uint32_t counter = 0;
   if (CanHandle->pRxMsg->IDE == CAN_ID_EXT)
   {
 		// EMMITER
@@ -317,8 +432,20 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *CanHandle)
 					switch ((uint8_t)(CanHandle->pRxMsg->ExtId & CAN_MESSAGE_TYPE_REGISTERID_mask))
 					{
 						case CAN_MESSAGE_TYPE_REGISTER_ID:
-							TxMessage.Data[0] = CAN_DEVICE_ID;
+							TxMessage.Data[0] = can_device_id;
 							TxMessage.DLC = 1;
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_UID1:
+							memcpy((void*)TxMessage.Data, (void*)&STM32_UUID[0], 4);
+							TxMessage.DLC = 4;
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_UID2:
+							memcpy((void*)TxMessage.Data, (void*)&STM32_UUID[1], 4);
+							TxMessage.DLC = 4;
+							break;
+						case CAN_MESSAGE_TYPE_REGISTER_UID3:
+							memcpy((void*)TxMessage.Data, (void*)&STM32_UUID[2], 4);
+							TxMessage.DLC = 4;
 							break;
 						case CAN_MESSAGE_TYPE_REGISTER_CNT:
 							memcpy((void*)TxMessage.Data, (void*)&LaserPulseCounter, 4);
@@ -349,8 +476,7 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *CanHandle)
 							// Read only
 							break;
 						case CAN_MESSAGE_TYPE_REGISTER_CNT:
-							memcpy((void*)&LaserPulseCounter, (void*)TxMessage.Data, 4);
-							StoreCounterToEEPROM();
+							memcpy((void*)&newLaserPulseCounter, (void*)RxMessage.Data, 4);
 							break;
 						case CAN_MESSAGE_TYPE_REGISTER_TEMPERATURE:
 							// Read only
@@ -365,7 +491,6 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *CanHandle)
 							// Not support
 							break;
 					}
-					HAL_CAN_Transmit_IT(&hcan);
 				}
 			}
 			else
@@ -409,7 +534,7 @@ void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *CanHandle)
   if (HAL_CAN_Receive_IT(CanHandle, CAN_FIFO0) != HAL_OK)
   {
     /* Reception Error */
-    Error_Handler();
+    //Error_Handler();
   }
 }
 
