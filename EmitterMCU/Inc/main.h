@@ -36,7 +36,7 @@
   /* Includes ------------------------------------------------------------------*/
 
 /* USER CODE BEGIN Includes */
-
+#include "stdint.h"
 /* USER CODE END Includes */
 
 /* Private define ------------------------------------------------------------*/
@@ -49,9 +49,12 @@
 #define LASER_CNT_MEM_ADDRESS				0x0000
 
 // CAN
-#define CAN_DEVICE_ID								0x01			// Diode laser V1.0
-#define SLOT_ID_FILTER							0 << 15		// Slot ID 0..1 << 7
-#define SLOT_ID_MASK								1 << 15
+//#define CAN_DEVICE_ID								0x01			// Diode laser V1.0
+//#define SLOT_ID_FILTER							0 << 15		// Slot ID 0..1 << 15
+//#define SLOT_ID_MASK								1 << 15
+extern uint8_t	can_device_id;
+extern uint32_t	can_slot_filter;
+extern uint32_t	can_slot_mask;
 
 // Device id groups
 #define CAN_RECEIVER_DEVICE_ID_SLOT_mask			0x8000
@@ -74,7 +77,8 @@
 #define CAN_MESSAGE_TYPE_CMD_RESETCNT					0x01
 #define CAN_MESSAGE_TYPE_CMD_TAU							0x02
 #define CAN_MESSAGE_TYPE_CMD_ENERGY						0x03
-#define CAN_MESSAGE_TYPE_CMD_REQUESTID				0x04
+#define CAN_MESSAGE_TYPE_CMD_ENERGY_SETUP			0x04
+#define CAN_MESSAGE_TYPE_CMD_REQUESTID				0x05
 
 // Registers
 #define CAN_MESSAGE_TYPE_REGISTER_ID					0x01
@@ -83,9 +87,16 @@
 #define CAN_MESSAGE_TYPE_REGISTER_FLOW				0x04
 #define CAN_MESSAGE_TYPE_REGISTER_LED					0x05
 #define CAN_MESSAGE_TYPE_REGISTER_SWITCH			0x06
+#define CAN_MESSAGE_TYPE_REGISTER_UID1				0x07
+#define CAN_MESSAGE_TYPE_REGISTER_UID2				0x08
+#define CAN_MESSAGE_TYPE_REGISTER_UID3				0x09
 
 #define CAN_MESSAGE_TYPE_REGISTERID_mask			0x3f
 #define CAN_MESSAGE_TYPE_COMMANDID_mask				0x3f
+
+// Energy table dimensions
+#define ENERGY_TABLE_DURATION_NUM							30
+#define ENERGY_TABLE_VOLTAGES_NUM							13
 
 /* USER CODE END Private defines */
 

@@ -1,5 +1,6 @@
 emittermcu\main.o: ../Src/main.c
 emittermcu\main.o: ../Inc/main.h
+emittermcu\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 emittermcu\main.o: ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h
 emittermcu\main.o: ../Inc/stm32f0xx_hal_conf.h
 emittermcu\main.o: ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_rcc.h
@@ -7,7 +8,6 @@ emittermcu\main.o: ../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_def.h
 emittermcu\main.o: ../Drivers/CMSIS/Device/ST/STM32F0xx/Include/stm32f0xx.h
 emittermcu\main.o: ../Drivers/CMSIS/Device/ST/STM32F0xx/Include/stm32f042x6.h
 emittermcu\main.o: ../Drivers/CMSIS/Include/core_cm0.h
-emittermcu\main.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 emittermcu\main.o: ../Drivers/CMSIS/Include/core_cmInstr.h
 emittermcu\main.o: ../Drivers/CMSIS/Include/cmsis_armcc.h
 emittermcu\main.o: ../Drivers/CMSIS/Include/core_cmFunc.h

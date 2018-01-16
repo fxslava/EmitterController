@@ -33,6 +33,7 @@
   */
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f0xx_hal.h"
+#include "main.h"
 
 extern void Error_Handler(void);
 /* USER CODE BEGIN 0 */
@@ -42,6 +43,8 @@ CanRxMsgTypeDef        RxMessage;
 /**
   * Initializes the Global MSP.
   */
+	
+volatile uint8_t laser_type = 0;
 void HAL_MspInit(void)
 {
   /* USER CODE BEGIN MspInit 0 */
@@ -60,6 +63,7 @@ void HAL_MspInit(void)
 
   /* USER CODE BEGIN MspInit 1 */
 	__HAL_RCC_GPIOB_CLK_ENABLE();
+	__HAL_RCC_GPIOA_CLK_ENABLE();
 	GPIO_InitTypeDef GPIO_InitStruct;
 
 	GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6;
@@ -67,6 +71,60 @@ void HAL_MspInit(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	
+	GPIO_InitStruct.Pin = GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	
+	HAL_Delay(100);
+	
+	if (!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_3))
+		laser_type |= 0x01;
+	if (!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_4))
+		laser_type |= 0x02;
+	if (!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_5))
+		laser_type |= 0x04;
+	if (!HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_6))
+		laser_type |= 0x08;
+	
+	if (laser_type == 0x01)
+	{
+		can_device_id = 0x81; // Nd Qsw V1
+		can_slot_filter = 1 << 15;
+	}
+	if (laser_type == 0x02)
+	{
+		can_device_id = 0x82; // Long Pulse
+		can_slot_filter = 1 << 15;
+	}
+	if (laser_type == 0x04)
+	{
+		can_device_id = 0x01; // Diode Laser
+		can_slot_filter = 0 << 15;
+	}
+	if (laser_type == 0x08)
+	{
+		can_device_id = 0x83; // 1440 nm (Fractional Laser)
+		can_slot_filter = 1 << 15;
+	}
+	if (laser_type == 0x03)
+	{
+		can_device_id = 0x85; // IPL
+		can_slot_filter = 1 << 15;
+	}
+	if (laser_type == 0x06)
+	{
+		can_device_id = 0x86; // 1340 nm
+		can_slot_filter = 1 << 15;
+	}
+	if (laser_type == 0x0c)
+	{
+		can_device_id = 0x87; // 2940 nm
+		can_slot_filter = 1 << 15;
+	}
   /* USER CODE END MspInit 1 */
 }
 
@@ -101,7 +159,7 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
 		hcan->pRxMsg = &RxMessage;
 		
 		TxMessage.StdId = 0x00;
-		TxMessage.ExtId = 0x12345678U;
+		TxMessage.ExtId = can_slot_filter;
 		TxMessage.IDE = CAN_ID_EXT;
 		TxMessage.RTR = CAN_RTR_DATA;
 		TxMessage.DLC = 2;
@@ -112,10 +170,10 @@ void HAL_CAN_MspInit(CAN_HandleTypeDef* hcan)
 		canFilter.FilterNumber = 0;
 		canFilter.FilterMode = CAN_FILTERMODE_IDMASK;
 		canFilter.FilterScale = CAN_FILTERSCALE_32BIT;
-		canFilter.FilterIdHigh = SLOT_ID_FILTER >> 13;
-		canFilter.FilterIdLow = (SLOT_ID_FILTER << 3) | CAN_ID_EXT;
-		canFilter.FilterMaskIdHigh = SLOT_ID_MASK >> 13;
-		canFilter.FilterMaskIdLow = (SLOT_ID_MASK << 3) | CAN_ID_EXT;
+		canFilter.FilterIdHigh = can_slot_filter >> 13;
+		canFilter.FilterIdLow = (can_slot_filter << 3) | CAN_ID_EXT;
+		canFilter.FilterMaskIdHigh = can_slot_mask >> 13;
+		canFilter.FilterMaskIdLow = (can_slot_mask << 3) | CAN_ID_EXT;
 		canFilter.FilterFIFOAssignment = CAN_FIFO0;
 		canFilter.FilterActivation = ENABLE;
 		canFilter.BankNumber = 0;
@@ -170,7 +228,7 @@ void HAL_I2C_MspInit(I2C_HandleTypeDef* hi2c)
     PA10     ------> I2C1_SDA 
     */
     GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_10;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
+    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
     GPIO_InitStruct.Pull = GPIO_PULLUP;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
     GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
