@@ -107,7 +107,7 @@ void HAL_MspInit(void)
 	}
 	if (laser_type == 0x08)
 	{
-		can_device_id = 0x83; // 1440 nm (Fractional Laser)
+		can_device_id = 0x83; // 1340 nm (Fractional Laser)
 		can_slot_filter = 1 << 15;
 	}
 	if (laser_type == 0x03)
@@ -117,7 +117,7 @@ void HAL_MspInit(void)
 	}
 	if (laser_type == 0x06)
 	{
-		can_device_id = 0x86; // 1340 nm
+		can_device_id = 0x86; // 1440 nm
 		can_slot_filter = 1 << 15;
 	}
 	if (laser_type == 0x0c)
