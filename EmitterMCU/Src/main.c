@@ -33,6 +33,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f0xx_hal.h"
+#include "stm32f0xx_hal_iwdg.h"
 
 /* USER CODE BEGIN Includes */
 #include <string.h>
@@ -44,6 +45,7 @@
 /* Private variables ---------------------------------------------------------*/
 CAN_HandleTypeDef hcan;
 I2C_HandleTypeDef hi2c1;
+IWDG_HandleTypeDef hiwdg;
 
 // CAN messages
 extern CanTxMsgTypeDef        TxMessage;
@@ -69,52 +71,6 @@ volatile static uint32_t newLaserPulseCounter = 0;
 // Temperature
 volatile float temperature;
 
-//Duration table
-volatile float duration_tbl[ENERGY_TABLE_DURATION_NUM] = {
-	0.002f,	0.004f, 0.006f, 0.008f, 0.010f, 0.012f, 0.014f, 0.016f, 0.018f, 0.020f,
-	2.000f,	4.000f, 6.000f, 8.000f, 10.00f, 12.00f, 14.00f, 16.00f, 18.00f, 20.00f,
-	22.00f,	24.00f, 26.00f, 28.00f, 30.00f, 32.00f, 34.00f, 36.00f, 38.00f, 40.00f	}; // reserved
-
-//Energy table
-volatile float energy_tbl[ENERGY_TABLE_DURATION_NUM * ENERGY_TABLE_VOLTAGES_NUM] = {
-	
-/*							220V,	240V,	260V,	280V, 300V, 320V, 340V, 360V, 380V, 400V, 420V, 440V, 450V - Voltages	*/
-/*	200us		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	400us		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	600us		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	800us		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	1000us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	1200us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	1400us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	1600us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	1800us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	2000us	*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,	
-	
-/*							220V,	240V,	260V,	280V, 300V, 320V, 340V, 360V, 380V, 400V, 420V, 440V, 450V - Voltages	*/	
-/*	2ms			*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	4ms			*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	6ms			*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	8ms			*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	10ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	12ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	14ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	16ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	18ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	20ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-
-/*							220V,	240V,	260V,	280V, 300V, 320V, 340V, 360V, 380V, 400V, 420V, 440V, 450V - Voltages	*/
-/*	12ms		*/	0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	14ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	16ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	18ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	20ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	22ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	24ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	26ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	28ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f,
-/*	30ms		*/  0.0f,	1.0f,	2.0f,	3.0f,	4.0f,	5.0f,	6.0f,	7.0f,	8.0f,	9.0f,	10.f,	11.f,	12.f
-};
-
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -123,6 +79,7 @@ void Error_Handler(void);
 static void MX_GPIO_Init(void);
 static void MX_CAN_Init(void);
 static void MX_I2C1_Init(void);
+static void MX_IWDG_Init(void);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -142,22 +99,22 @@ float Lerp(float X1, float X2, float Y1, float Y2, float x)
 
 void rx_led_on()
 {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET);
 }
 
 void rx_led_off()
 {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_RESET);
 }
 
 void tx_led_on()
 {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
 }
 
 void tx_led_off()
 {
-	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET);
 }
 
 void LoadCounterFromEEPROM()
@@ -245,29 +202,35 @@ int main(void)
 
   /* Configure the system clock */
   SystemClock_Config();
+	SystemCoreClockUpdate();	
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_CAN_Init();
   MX_I2C1_Init();
+	MX_IWDG_Init();
 
   /* USER CODE BEGIN 2 */
 	// Load Laser Pulse Counter
 	//TestEEPROM();
 	LoadCounterFromEEPROM();
 	
+	//newLaserPulseCounter = 50000;
+	//LaserPulseCounter = newLaserPulseCounter;
+	//StoreCounterToEEPROM();
+	
 	// Normal start "Blink"
 	rx_led_on();
 	tx_led_on();
-	HAL_Delay(100);
+	HAL_Delay(10);
 	rx_led_off();
 	tx_led_off();
 	
 	// Start CAN receiving messages
 	HAL_CAN_Receive_IT(&hcan, CAN_FIFO0);
-	
+			
 	// Test temperature sensor
-	InitTemperatureSensor();
+	//InitTemperatureSensor();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -276,13 +239,19 @@ int main(void)
   {
   /* USER CODE END WHILE */
   /* USER CODE BEGIN 3 */
-		ReadTemperatureData();
+		//ReadTemperatureData();
+		static uint8_t cnt = 0;
+		
+		if (((++cnt) % 100) == 0)
+			HAL_IWDG_Refresh(&hiwdg);
 		
 		if (LaserPulseCounter != newLaserPulseCounter)
 		{
 			LaserPulseCounter = newLaserPulseCounter;
 			StoreCounterToEEPROM();
 		}
+		
+		HAL_Delay(1);
   }
   /* USER CODE END 3 */
 
@@ -299,7 +268,7 @@ void SystemClock_Config(void)
 
     /**Initializes the CPU, AHB and APB busses clocks 
     */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE | RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -356,13 +325,13 @@ static void MX_CAN_Init(void)
   hcan.Init.TTCM = DISABLE;
   hcan.Init.ABOM = DISABLE;
   hcan.Init.AWUM = DISABLE;
-  hcan.Init.NART = DISABLE;
+  hcan.Init.NART = ENABLE;
   hcan.Init.RFLM = DISABLE;
   hcan.Init.TXFP = DISABLE;
   if (HAL_CAN_Init(&hcan) != HAL_OK)
   {
     Error_Handler();
-  }
+  } 
 }
 
 /* I2C1 init function */
@@ -393,6 +362,19 @@ static void MX_I2C1_Init(void)
     /**Configure Digital filter 
     */
   if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/* IWDG init function */
+static void MX_IWDG_Init(void)
+{	
+  hiwdg.Instance = IWDG;
+  hiwdg.Init.Prescaler = IWDG_PRESCALER_4;
+  hiwdg.Init.Window = 2000;
+  hiwdg.Init.Reload = 2000;
+  if (HAL_IWDG_Init(&hiwdg) != HAL_OK)
   {
     Error_Handler();
   }

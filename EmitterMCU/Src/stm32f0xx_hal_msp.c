@@ -48,7 +48,7 @@ volatile uint8_t laser_type = 0;
 void HAL_MspInit(void)
 {
   /* USER CODE BEGIN MspInit 0 */
-
+	__HAL_RCC_PWR_CLK_ENABLE();
   /* USER CODE END MspInit 0 */
 
   __HAL_RCC_SYSCFG_CLK_ENABLE();
@@ -66,7 +66,7 @@ void HAL_MspInit(void)
 	__HAL_RCC_GPIOA_CLK_ENABLE();
 	GPIO_InitTypeDef GPIO_InitStruct;
 
-	GPIO_InitStruct.Pin = GPIO_PIN_5 | GPIO_PIN_6;
+	GPIO_InitStruct.Pin = GPIO_PIN_3 | GPIO_PIN_4;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
@@ -94,7 +94,7 @@ void HAL_MspInit(void)
 	{
 		can_device_id = 0x81; // Nd Qsw V1
 		can_slot_filter = 1 << 15;
-	}
+	}	
 	if (laser_type == 0x02)
 	{
 		can_device_id = 0x82; // Long Pulse
@@ -107,22 +107,27 @@ void HAL_MspInit(void)
 	}
 	if (laser_type == 0x08)
 	{
-		can_device_id = 0x83; // 1340 nm (Fractional Laser)
+		can_device_id = 0x83; // 1440 nm (Fractional Laser)
 		can_slot_filter = 1 << 15;
 	}
 	if (laser_type == 0x03)
 	{
-		can_device_id = 0x85; // IPL
+		can_device_id = 0x85; // IPL (SS | LP)
 		can_slot_filter = 1 << 15;
 	}
 	if (laser_type == 0x06)
 	{
-		can_device_id = 0x86; // 1440 nm
+		can_device_id = 0x86; // 1340 nm (LP | LD)
+		can_slot_filter = 1 << 15;
+	}
+	if (laser_type == 0x09)
+	{
+		can_device_id = 0x84; // Nd Qsw V2 (FL | SS)
 		can_slot_filter = 1 << 15;
 	}
 	if (laser_type == 0x0c)
 	{
-		can_device_id = 0x87; // 2940 nm
+		can_device_id = 0x87; // 2940 nm (LD | FL)
 		can_slot_filter = 1 << 15;
 	}
   /* USER CODE END MspInit 1 */
