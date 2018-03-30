@@ -481,7 +481,7 @@ I (../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_i2c_ex.h)(0x590049C5)
 I (../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_iwdg.h)(0x5A9CCDBC)
 I (../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_pwr.h)(0x590049C5)
 I (../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal_pwr_ex.h)(0x590049C5)
-F (../Src/main.c)(0x5AAB51F5)(-c --cpu Cortex-M0 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F0xx_HAL_Driver/Inc -I ../Drivers/STM32F0xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F0xx/Include -I ../Drivers/CMSIS/Include -I .\EnergyTables --C99-I C:\Users\FxSlava\Documents\EmitterController\EmitterMCU\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.1\CMSIS\Include-I C:\Keil_v5\ARM\PACK\Keil\STM32F0xx_DFP\1.5.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F042x6 -DUSE_HAL_DRIVER -DSTM32F042x6-o emittermcu\main.o --omf_browse emittermcu\main.crf --depend emittermcu\main.d)
+F (../Src/main.c)(0x5ABE1B91)(-c --cpu Cortex-M0 -D__MICROLIB -g -O3 --apcs=interwork --split_sections -I ../Inc -I ../Drivers/STM32F0xx_HAL_Driver/Inc -I ../Drivers/STM32F0xx_HAL_Driver/Inc/Legacy -I ../Drivers/CMSIS/Device/ST/STM32F0xx/Include -I ../Drivers/CMSIS/Include -I .\EnergyTables --C99-I C:\Users\FxSlava\Documents\EmitterController\EmitterMCU\MDK-ARM\RTE-I C:\Keil_v5\ARM\PACK\ARM\CMSIS\5.0.1\CMSIS\Include-I C:\Keil_v5\ARM\PACK\Keil\STM32F0xx_DFP\1.5.0\Device\Include-D__UVISION_VERSION="520" -D_RTE_ -DSTM32F042x6 -DUSE_HAL_DRIVER -DSTM32F042x6-o emittermcu\main.o --omf_browse emittermcu\main.crf --depend emittermcu\main.d)
 I (../Inc/main.h)(0x5A5D855F)
 I (C:\Keil_v5\ARM\ARMCC\include\stdint.h)(0x56FE50EE)
 I (../Drivers/STM32F0xx_HAL_Driver/Inc/stm32f0xx_hal.h)(0x590049C5)

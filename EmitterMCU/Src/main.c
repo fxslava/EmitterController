@@ -397,6 +397,39 @@ static void MX_GPIO_Init(void)
 
 }
 
+/* -------------------------  send buffer algorithm -------------------- */
+static uint8_t* rx_ptr = 0;
+static uint16_t rx_cnt = 0;
+static uint16_t rx_len = 0;
+
+void HAL_CAN_SendBuffer(uint8_t* buffer)
+{
+	memcpy((void*)TxMessage.Data, (void*)&buffer, 8);
+	HAL_CAN_Transmit_IT(&hcan);
+	rx_ptr = (uint8_t*)((int)&buffer + 8);
+	rx_cnt = 8;
+}
+
+void HAL_CAN_TxCpltCallback(CAN_HandleTypeDef *CanHandle)
+{
+	int len = rx_len - rx_cnt;
+	if (len < 8)
+	{
+		memcpy((void*)TxMessage.Data, (void*)rx_ptr, len);
+		HAL_CAN_Transmit_IT(&hcan);
+		rx_ptr += len;
+		rx_cnt += len;
+	}
+	else
+	{
+		memcpy((void*)TxMessage.Data, (void*)rx_ptr, 8);
+		HAL_CAN_Transmit_IT(&hcan);
+		rx_ptr += 8;
+		rx_cnt += 8;
+	}
+}
+/* -------------------------  send buffer algorithm -------------------- */
+
 /* USER CODE BEGIN 4 */
 void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef *CanHandle)
 {

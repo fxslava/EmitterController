@@ -28,13 +28,15 @@ Project File Date:  03/15/2018
 *** Using Compiler 'V5.06 update 2 (build 183)', folder: 'C:\Keil_v5\ARM\ARMCC\Bin'
 Build target 'EmitterMCU'
 compiling main.c...
-../Src/main.c(403): warning:  #177-D: variable "counter" was declared but never referenced
+../Src/main.c(436): warning:  #177-D: variable "counter" was declared but never referenced
   	uint32_t counter = 0;
-../Src/main.c: 1 warning, 0 errors
+../Src/main.c(411): warning: C4487E: read from variable 'buffer' with offset out of bounds
+}
+../Src/main.c: 2 warnings, 0 errors
 linking...
-Program Size: Code=9396 RO-data=272 RW-data=17600 ZI-data=1244  
+Program Size: Code=9516 RO-data=272 RW-data=17488 ZI-data=1244  
 FromELF: creating hex file...
-"EmitterMCU\EmitterMCU.axf" - 0 Error(s), 1 Warning(s).
+"EmitterMCU\EmitterMCU.axf" - 0 Error(s), 2 Warning(s).
 
 <h2>Software Packages used:</h2>
 
@@ -52,7 +54,7 @@ Package Vendor: ARM
 <h2>Collection of Component Files used:</h2>
 
    * Component: ARM::CMSIS:CORE:5.0.1
-Build Time Elapsed:  00:00:01
+Build Time Elapsed:  00:00:02
 </pre>
 </body>
 </html>
